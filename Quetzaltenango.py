@@ -69,18 +69,20 @@ def get_master_cell(ws, r_idx, c_idx):
 
 # --- TRUCO CSS PARA TRADUCIR LA INTERFAZ A ESPAÑOL ---
 st.markdown("""
-    <style>
-        .stFileUploader > div > div > div > div > span:first-child { display: none; }
-        .stFileUploader > div > div > div > div::before {
-            content: "Arrastre y suelte los archivos aquí";
-            display: block; font-weight: 600; margin-bottom: 20px;
+    <style> 
+        div[data-testid="stFileUploader"] label p {
+            font-size: 3rem !important;
         }
     </style>
 """, unsafe_allow_html=True)
 
 # --- WEB UI ---
 st.title("🇬🇹 MAGA: Procesador de Facturas por la LAE")
+
+st.markdown('Arrastre y suelte las facturas aquí')
 uploaded_pdfs = st.file_uploader(label='1. Seleccione sus Facturas (PDFs)', type='pdf', accept_multiple_files=True)
+
+st.markdown('Arrastre y suelte el archivo de Excel aquí')
 uploaded_xlsx = st.file_uploader(label='2. Seleccione su Archivo de Excel', type='xlsx')
 
 if st.button("INICIAR PROCESO") and uploaded_pdfs and uploaded_xlsx:
