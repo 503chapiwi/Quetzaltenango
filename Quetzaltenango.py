@@ -73,7 +73,7 @@ st.markdown("""
         .stFileUploader > div > div > div > div > span:first-child { display: none; }
         .stFileUploader > div > div > div > div::before {
             content: "Arrastre y suelte los archivos aquí";
-            display: block; font-weight: 600; margin-bottom: 5px;
+            display: block; font-weight: 600; margin-bottom: 20px;
         }
     </style>
 """, unsafe_allow_html=True)
