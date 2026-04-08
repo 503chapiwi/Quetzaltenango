@@ -79,10 +79,7 @@ st.markdown("""
 # --- WEB UI ---
 st.title("🇬🇹 MAGA: Procesador de Facturas por la LAE")
 
-st.markdown('Arrastre y suelte las facturas aquí')
 uploaded_pdfs = st.file_uploader(label='1. Seleccione sus Facturas (PDFs)', type='pdf', accept_multiple_files=True)
-
-st.markdown('Arrastre y suelte el archivo de Excel aquí')
 uploaded_xlsx = st.file_uploader(label='2. Seleccione su Archivo de Excel', type='xlsx')
 
 if st.button("INICIAR PROCESO") and uploaded_pdfs and uploaded_xlsx:
