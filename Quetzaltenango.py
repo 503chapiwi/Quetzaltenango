@@ -77,7 +77,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # --- WEB UI ---
-st.title("🇬🇹 MAGA: Procesador de Facturas por la LAE")
+st.title("🇬🇹 MAGA: Procesador de Facturas por la LAE: Quetzaltenango")
 
 uploaded_pdfs = st.file_uploader(label='1. Seleccione sus Facturas (PDFs)', type='pdf', accept_multiple_files=True)
 uploaded_xlsx = st.file_uploader(label='2. Seleccione su Archivo de Excel', type='xlsx')
