@@ -71,7 +71,7 @@ def get_master_cell(ws, r_idx, c_idx):
 st.markdown("""
     <style> 
         div[data-testid="stFileUploader"] label p {
-            15: 56px !important;
+            font-size: 5600px !important;
         }
     </style>
 """, unsafe_allow_html=True)
