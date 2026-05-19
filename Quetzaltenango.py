@@ -263,7 +263,7 @@ MUNICIPIOS_OPCIONES = {
     "Coatepeque": 5,
     "Colomba": 6,
     "Concepción Chiquirichapa": 7,
-    "El Palmar": 8
+    "El Palmar": 8,
     "Flores Costa Cuca": 9,
     "Génova Costa Cuca": 10,
     "Huitan (hi kurt)": 11,
