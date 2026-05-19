@@ -270,7 +270,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # --- WEB UI ---
-st.title("🇬🇹 MAGA: Procesador de Facturas por la LAE: Totonicapán")
+st.title("🇬🇹 MAGA: Procesador de Facturas por la LAE: Quetzaltenango")
 
 # Municipality selector - user must specify which municipality the receipts belong to
 MUNICIPIOS_OPCIONES = {
