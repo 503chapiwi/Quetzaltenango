@@ -256,14 +256,30 @@ st.title("🇬🇹 MAGA: Procesador de Facturas por la LAE: Totonicapán")
 
 # Municipality selector - user must specify which municipality the receipts belong to
 MUNICIPIOS_OPCIONES = {
-    "Totonicapán": 1,
-    "San Cristóbal Totonicapán": 2,
-    "San Francisco El Alto": 3,
-    "San Andrés Xecul": 4,
-    "Momostenango": 5,
-    "Santa María Chiquimula": 6,
-    "Santa Lucía La Reforma": 7,
-    "San Bartolo Aguas Calientes": 8
+    "Almolonga": 1,
+    "Cabricán": 2,
+    "Cajolá": 3,
+    "Cantel": 4,
+    "Coatepeque": 5,
+    "Colomba": 6,
+    "Concepción Chiquirichapa": 7,
+    "El Palmar": 8
+    "Flores Costa Cuca": 9,
+    "Génova Costa Cuca": 10,
+    "Huitan (hi kurt)": 11,
+    "La Esperanza": 12,
+    "Olintepeque": 13,
+    "Palestina De Los Altos": 14,
+    "Quetzaltenango": 15,
+    "Salcajá": 16,
+    "San Carlos Sija": 17,
+    "San Francisco La Unión": 18,
+    "San Juan Ostuncalco": 19,
+    "San Martin Sacatépequez": 20,
+    "San Mateo": 21,
+    "San Miguel Sigüilá": 22,
+    "Sibilia": 23,
+    "Zunil": 24,
 }
 
 selected_municipio = st.selectbox(
@@ -360,8 +376,12 @@ if st.button("INICIAR PROCESO") and uploaded_pdfs and uploaded_xlsx and municipi
         ))
         
         EXCEL_MAPPINGS = {
-            1: "totonicapán", 2: "san cristobal", 3: "san francisco", 4: "san andres",
-            5: "momostenango", 6: "santa maria", 7: "santa lucia", 8: "san bartolo"
+            1: "almolonga", 2: "cabrican", 3: "cajola", 4: "cantel",
+            5: "coatepeque", 6: "colomba", 7: "concepcion chiquirichapa", 8: "el palmar", 9: 'flores costa cuca',
+            10: 'genova costa cuca', 11: 'huitan', 12: 'la esperanza', 13: 'olintepeque', 14: 'palestina de los altos',
+            15: 'quetzaltenango', 16: 'salcaja', 17: 'san carlos sija', 18: 'san francisco la union',
+            19: 'san juan ostuncalco', 20: 'san martin sacatepequez', 21: 'san mateo', 22: 'san miguel siguila', 
+            23: 'sibila', 24: 'zunil'
         }
 
         # 3. Map Excel Rows to Municipalities
