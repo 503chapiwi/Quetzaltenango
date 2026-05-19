@@ -68,62 +68,180 @@ def get_master_cell(ws, r_idx, c_idx):
                 return ws.cell(row=m_range.min_row, column=m_range.min_col)
     return cell
 
+def find_description_in_row(row):
+    """
+    Find the product description in a row by finding the longest text cell
+    that contains letters (not pure numbers/symbols).
+    """
+    best_candidate = ""
+    best_score = 0
+    
+    for cell in row:
+        if cell is None:
+            continue
+        
+        cell_str = str(cell).strip()
+        if not cell_str:
+            continue
+        
+        # Skip obvious non-descriptions
+        cell_upper = cell_str.upper()
+        if cell_upper in ['BIEN', 'SERVICIO', 'B/S']:
+            continue
+        if cell_upper.startswith('IVA ') or cell_upper.startswith('ISR '):
+            continue
+        
+        # Check if it's a pure number
+        try:
+            float(cell_str.replace(',', '.').replace(' ', ''))
+            # It's a number - only use if nothing else found
+            continue
+        except ValueError:
+            # Not a pure number - this is good!
+            pass
+        
+        # Score this cell based on how likely it is to be a description
+        # Longer text with more letters = higher score
+        letter_count = sum(1 for c in cell_str if c.isalpha())
+        
+        # Must have at least some letters to be a description
+        if letter_count < 3:
+            continue
+        
+        # Score = number of letters (prefer text over numbers)
+        score = letter_count
+        
+        if score > best_score:
+            best_score = score
+            best_candidate = cell_str
+    
+    return best_candidate
+
+def merge_split_rows(tables):
+    """
+    Merges rows that were split due to white lines in PDF tables.
+    
+    Detects continuation rows (rows with only description text but no item number/value)
+    and merges them back into the previous data row's description.
+    
+    Example:
+        Row N:   ['23', None, 'Bien', '32', 'UNIDADES DE', '5.50', ..., '176.00']
+        Row N+1: [None, '', '', '', 'AGUACATE', '', '', '', '', '']  ← continuation
+        
+        After merge:
+        Row N:   ['23', None, 'Bien', '32', 'UNIDADES DE AGUACATE', '5.50', ..., '176.00']
+        Row N+1: removed
+    """
+    if not tables:
+        return tables
+    
+    merged = []
+    i = 0
+    while i < len(tables):
+        current_row = list(tables[i]) if tables[i] else []
+        
+        # Look ahead to merge any continuation rows
+        j = i + 1
+        while j < len(tables):
+            next_row = tables[j]
+            if not next_row:
+                break
+            
+            # Check if next_row is a continuation row:
+            # 1. No item number (no digit) in first 5 cells
+            # 2. No numeric values anywhere
+            # 3. Has at least some text content
+            has_item_number = False
+            for cell in next_row[:5]:
+                if cell:
+                    cell_str = str(cell).strip()
+                    if cell_str.isdigit():
+                        has_item_number = True
+                        break
+            
+            has_numeric_value = False
+            text_fragments = []
+            for cell in next_row:
+                if cell is None:
+                    continue
+                cell_str = str(cell).strip()
+                if not cell_str:
+                    continue
+                # Check if it's a number
+                try:
+                    val = float(cell_str.replace(',', '.').replace(' ', ''))
+                    if val > 0:
+                        has_numeric_value = True
+                        break
+                except ValueError:
+                    # Not a number - could be description text
+                    cell_upper = cell_str.upper()
+                    if len(cell_str) >= 3 and cell_upper not in ['BIEN', 'SERVICIO', 'B/S']:
+                        if not cell_upper.startswith('IVA') and not cell_upper.startswith('ISR'):
+                            text_fragments.append(cell_str)
+            
+            # If it's a continuation row, merge text into current row's description
+            if not has_item_number and not has_numeric_value and text_fragments:
+                continuation_text = " ".join(text_fragments)
+                
+                # Find description cell in current row and append the continuation
+                for k, cell in enumerate(current_row):
+                    if cell is None:
+                        continue
+                    cell_str = str(cell).strip()
+                    if not cell_str:
+                        continue
+                    # Skip non-description cells
+                    cell_upper = cell_str.upper()
+                    if cell_upper in ['BIEN', 'SERVICIO', 'B/S']:
+                        continue
+                    if cell_upper.startswith('IVA') or cell_upper.startswith('ISR'):
+                        continue
+                    # Skip pure numbers
+                    try:
+                        float(cell_str.replace(',', '.').replace(' ', ''))
+                        continue
+                    except ValueError:
+                        pass
+                    # This is the description cell - append continuation
+                    if len(cell_str) >= 3:
+                        current_row[k] = cell_str + " " + continuation_text
+                        break
+                
+                j += 1  # Move to next row, continue checking for more continuations
+            else:
+                # Not a continuation, stop merging
+                break
+        
+        merged.append(current_row)
+        i = j  # Skip past any merged continuation rows
+    
+    return merged
+
 def fuzzy_match_category(description, cultivados, abarrotes, threshold=80):
     """
-    Uses fuzzy matching to categorize a product description.
-    Returns: ('agricultura', best_match_word) or ('abarrotes', best_match_word) or ('unmatched', None)
+    Accent-insensitive, word-boundary matching with Spanish plural tolerance.
+    Handles pdfplumber multi-line cells and concatenated units like 'espagueti180g'.
     """
     if not description:
         return ('unmatched', None)
-    
-    # Normalize and extract words from description
-    desc_normalized = normalize_text(description)
-    words = desc_normalized.split()
-    
-    # Try exact matches first (original logic)
-    for word in words:
-        if word in cultivados:
-            return ('agricultura', word)
-        if word in abarrotes:
-            return ('abarrotes', word)
-    
-    # If no exact match, try fuzzy matching
-    best_agri_match = None
-    best_agri_score = 0
-    
-    for word in words:
-        # Skip very short words (less than 3 chars) for fuzzy matching
-        if len(word) < 3:
-            continue
-            
-        # Check against cultivados
-        match_result = process.extractOne(word, cultivados, scorer=fuzz.ratio)
-        if match_result and match_result[1] >= threshold:
-            if match_result[1] > best_agri_score:
-                best_agri_score = match_result[1]
-                best_agri_match = match_result[0]
-    
-    best_abar_match = None
-    best_abar_score = 0
-    
-    for word in words:
-        if len(word) < 3:
-            continue
-            
-        # Check against abarrotes
-        match_result = process.extractOne(word, abarrotes, scorer=fuzz.ratio)
-        if match_result and match_result[1] >= threshold:
-            if match_result[1] > best_abar_score:
-                best_abar_score = match_result[1]
-                best_abar_match = match_result[0]
-    
-    # Return the category with the best match
-    if best_agri_score > best_abar_score and best_agri_match:
-        return ('agricultura', best_agri_match)
-    elif best_abar_match:
-        return ('abarrotes', best_abar_match)
-    else:
-        return ('unmatched', None)
+
+    desc_norm = normalize_text(description)
+    # Collapse newlines/tabs/repeated whitespace from multi-line PDF cells
+    desc_norm = re.sub(r'\s+', ' ', desc_norm).strip()
+    # Split letter/digit runs so "espagueti180g" -> "espagueti 180 g"
+    desc_norm = re.sub(r'([a-z])(\d)', r'\1 \2', desc_norm)
+    desc_norm = re.sub(r'(\d)([a-z])', r'\1 \2', desc_norm)
+
+    # (e?s)? tolerates Spanish plurals: banano/bananos, limon/limones, etc.
+    for kw in cultivados:
+        if re.search(r'\b' + re.escape(kw) + r'(e?s)?\b', desc_norm):
+            return ('agricultura', kw)
+    for kw in abarrotes:
+        if re.search(r'\b' + re.escape(kw) + r'(e?s)?\b', desc_norm):
+            return ('abarrotes', kw)
+
+    return ('unmatched', None)
 
 # --- TRUCO CSS PARA TRADUCIR LA INTERFAZ A ESPAÑOL ---
 st.markdown("""
@@ -135,19 +253,51 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # --- WEB UI ---
-st.title("🇬🇹 MAGA: Procesador de Facturas por la LAE: Quetzaltenango")
-uploaded_pdfs = st.file_uploader(label='1. Seleccione sus Facturas (PDFs)', type='pdf', accept_multiple_files=True)
-uploaded_xlsx = st.file_uploader(label='2. Seleccione su Archivo de Excel', type='xlsx')
+st.title("🇬🇹 MAGA: Procesador de Facturas por la LAE: Totonicapán")
 
-if st.button("INICIAR PROCESO") and uploaded_pdfs and uploaded_xlsx:
+# Municipality selector - user must specify which municipality the receipts belong to
+MUNICIPIOS_OPCIONES = {
+    "Totonicapán": 1,
+    "San Cristóbal Totonicapán": 2,
+    "San Francisco El Alto": 3,
+    "San Andrés Xecul": 4,
+    "Momostenango": 5,
+    "Santa María Chiquimula": 6,
+    "Santa Lucía La Reforma": 7,
+    "San Bartolo Aguas Calientes": 8
+}
+
+selected_municipio = st.selectbox(
+    label='1. Seleccione el Municipio de las facturas',
+    options=["-- Seleccionar municipio --"] + list(MUNICIPIOS_OPCIONES.keys()),
+    help="Todas las facturas que suba deben corresponder a este municipio"
+)
+
+uploaded_pdfs = st.file_uploader(label='2. Seleccione sus Facturas (PDFs)', type='pdf', accept_multiple_files=True)
+uploaded_xlsx = st.file_uploader(label='3. Seleccione su Archivo de Excel', type='xlsx')
+
+# Show warning if municipality not selected
+municipio_valido = selected_municipio != "-- Seleccionar municipio --"
+
+# Show informational message about municipality selection
+if municipio_valido:
+    st.info(f"📍 Municipio seleccionado: **{selected_municipio}**. Asegúrese de que todas las facturas correspondan a este municipio.")
+else:
+    st.warning("⚠️ Por favor seleccione un municipio antes de iniciar el proceso.")
+
+if st.button("INICIAR PROCESO") and uploaded_pdfs and uploaded_xlsx and municipio_valido:
     try:
+        # Get municipality info from user selection
+        user_m_id = MUNICIPIOS_OPCIONES[selected_municipio]
+        user_m_name = selected_municipio
+        
         input_buffer = io.BytesIO(uploaded_xlsx.read())
         wb = openpyxl.load_workbook(input_buffer)
         ws = wb.active 
         
         if "Extra Detalles" not in wb.sheetnames:
             ws_det = wb.create_sheet("Extra Detalles")
-            ws_det.append(['Nombre Emisor', 'NIT Emisor', 'NIT Receptor', 'Num. DTE', 'Municipio', 'Alerta % Abarrotes'])
+            ws_det.append(['Archivo PDF', 'Nombre Emisor', 'NIT Emisor', 'NIT Receptor', 'Num. DTE', 'Municipio', 'Alerta % Abarrotes'])
         else:
             ws_det = wb["Extra Detalles"]
         
@@ -185,43 +335,25 @@ if st.button("INICIAR PROCESO") and uploaded_pdfs and uploaded_xlsx:
             st.error(f"No encontré las columnas base en el Excel.")
             st.stop()
 
-        department_name = 'quetzaltenango'
+        department_name = 'totonicapan'
         # 2. MASTER MUNICIPALITY DICTIONARY
         MUNICIPIOS = {
-            1: {"nombre_oficial": "Almolonga",                 "alias_pdf": ["almolonga"]},
-            2: {"nombre_oficial": "Cabrican",                  "alias_pdf": ["cabrican"]},
-            3: {"nombre_oficial": "Cajola",                    "alias_pdf": ["cajola"]},
-            4: {"nombre_oficial": "Cantel",                    "alias_pdf": ["cantel"]},
-            5: {"nombre_oficial": "Coatepeque",                "alias_pdf": ["coatepeque"]},
-            6: {"nombre_oficial": "Colomba",                   "alias_pdf": ["colomba"]},
-            7: {"nombre_oficial": "Concepcion Chiquirichapa",  "alias_pdf": ["concepcion chiquirichapa"]},
-            8: {"nombre_oficial": "El Palmar",                 "alias_pdf": ["el palmar"]},
-            9: {"nombre_oficial": "Flores Costa Cuca",         "alias_pdf": ["flores costa cuca"]},
-            10: {"nombre_oficial": "Genova Costa Cuca",        "alias_pdf": ["genova costa cuca"]},
-            11: {"nombre_oficial": "Huitan",                   "alias_pdf": ["huitan"]},
-            12: {"nombre_oficial": "La Esperanza",             "alias_pdf": ["la esperanza"]},
-            13: {"nombre_oficial": "Olintepeque",              "alias_pdf": ["olintepeque"]},
-            14: {"nombre_oficial": "Palestina de Los Altos",   "alias_pdf": ["palestina de los altos"]},
-            15: {"nombre_oficial": "Quetzaltenango",           "alias_pdf": ["quetzaltenango, quetzaltenango", "quetzaltenango quetzaltenango", "xela"]},
-            16: {"nombre_oficial": "Salcaja",                  "alias_pdf": ["salcaja"]},
-            17: {"nombre_oficial": "San Carlos Sija",          "alias_pdf": ["san carlos sija"]},
-            18: {"nombre_oficial": "San Francisco la Union",   "alias_pdf": ["san francisco la union"]},
-            19: {"nombre_oficial": "San Juan Ostuncalco",      "alias_pdf": ["san juan ostuncalco"]},
-            20: {"nombre_oficial": "San Martin Sacatepequez",  "alias_pdf": ["san martin sacatepequez"]},
-            21: {"nombre_oficial": "San Mateo",                "alias_pdf": ["san mateo"]},
-            22: {"nombre_oficial": "San Miguel Siguila",       "alias_pdf": ["san miguel siguila"]},
-            23: {"nombre_oficial": "Sibila",                   "alias_pdf": ["sibila"]},
-            24: {"nombre_oficial": "Zunil",                    "alias_pdf": ["zunil"]},
-
+            1: {"nombre_oficial": "Totonicapán", "alias_pdf": ["totonicapan totonicapan", "totonicapan, totonicapan", "totonicapan"]},
+            2: {"nombre_oficial": "San Cristóbal Totonicapán", "alias_pdf": ["san cristobal totonicapan", "san cristobal"]},
+            3: {"nombre_oficial": "San Francisco El Alto", "alias_pdf": ["san francisco el alto", "san francisco"]},
+            4: {"nombre_oficial": "San Andrés Xecul", "alias_pdf": ["san andres xecul", "san andres"]},
+            5: {"nombre_oficial": "Momostenango", "alias_pdf": ["momostenango"]},
+            6: {"nombre_oficial": "Santa María Chiquimula", "alias_pdf": ["santa maria chiquimula", "sta maria chiquimula", "santa maria", "sta maria"]},
+            7: {"nombre_oficial": "Santa Lucía La Reforma", "alias_pdf": ["santa lucia la reforma", "sta lucia la reforma", "santa lucia", "sta lucia"]},
+            8: {"nombre_oficial": "San Bartolo Aguas Calientes", "alias_pdf": ["san bartolo aguas calientes", "san bartolo"]}
         }
-
         
         search_list = []
         for m_id, data in MUNICIPIOS.items():
             for alias in data["alias_pdf"]:
                 search_list.append((alias, m_id, data["nombre_oficial"]))
                 
-        # CORE FIX: Sorts the list so Quetzaltenango (ID 1) is ALWAYS evaluated last.
+        # CORE FIX: Sorts the list so Totonicapán (ID 1) is ALWAYS evaluated last.
         # Within the other municipalities, sorts by length to catch specific names first.
                 search_list.sort(key=lambda x: (
             squish_text(x[2]) == squish_text(department_name),
@@ -229,12 +361,8 @@ if st.button("INICIAR PROCESO") and uploaded_pdfs and uploaded_xlsx:
         ))
         
         EXCEL_MAPPINGS = {
-            1: "almolonga", 2: "cabrican", 3: "cajola", 4: "cantel", 5: "coatepeque",
-            6: "colomba", 7: "concepcion chiquirichapa", 8: "el palmar", 9: "flores costa cuca",
-            10: "genova costa cuca", 11: "huitan", 12: "la esperanza", 13: "olintepeque", 14: "palestina de los altos", 
-            15: "quetzaltenango", 16: "salcaja", 17: "san carlos sija", 18: "san francisco la union", 
-            19: "san juan ostuncalco", 20: "san martin sacatepequez", 21: "san mateo", 22: "san miguel siguila", 
-            23: "sibilia", 24: "zunil",
+            1: "totonicapán", 2: "san cristobal", 3: "san francisco", 4: "san andres",
+            5: "momostenango", 6: "santa maria", 7: "santa lucia", 8: "san bartolo"
         }
 
         # 3. Map Excel Rows to Municipalities
@@ -250,6 +378,7 @@ if st.button("INICIAR PROCESO") and uploaded_pdfs and uploaded_xlsx:
 
         batch_totals = {m_id: {'abar': 0.0, 'agri': 0.0, 'emisores': set(), 'receptores': set()} for m_id in MUNICIPIOS.keys()}
         new_count = 0
+        skipped_non_standard = []  # Track non-standard receipts
         progress_bar = st.progress(0)
 
         # 4. Process each PDF
@@ -260,52 +389,141 @@ if st.button("INICIAR PROCESO") and uploaded_pdfs and uploaded_xlsx:
                 for p in pdf.pages:
                     t = p.extract_table()
                     if t: tables.extend(t)
+                
+                # Merge rows that were split by white lines in the PDF
+                tables = merge_split_rows(tables)
+
+                # VALIDATION: Check if this is a standard SAT factura
+                # Standard facturas have specific markers that proformas/cotizaciones don't
+                is_standard_factura = False
+                
+                # Check 1: Must have "Número de DTE" (unique to SAT facturas)
+                has_dte = bool(re.search(r'N[úu]mero\s*de\s*DTE', text, re.IGNORECASE))
+                
+                # Check 2: Must have "NÚMERO DE AUTORIZACIÓN" (SAT authorization)
+                has_autorizacion = bool(re.search(r'N[úu]mero\s*de\s*Autorizaci[óo]n', text, re.IGNORECASE))
+                
+                # Check 3: Must have "Nit Emisor" in standard format
+                has_nit_emisor = bool(re.search(r'Nit\s*Emisor', text, re.IGNORECASE))
+                
+                # Must have at least 2 of the 3 markers to be considered a valid factura
+                marker_count = sum([has_dte, has_autorizacion, has_nit_emisor])
+                is_standard_factura = marker_count >= 2
+                
+                if not is_standard_factura:
+                    skipped_non_standard.append(pdf_file.name)
+                    progress_bar.progress((i + 1) / len(uploaded_pdfs))
+                    continue
 
                 dte_m = re.search(r'N[úu]mero\s*de\s*DTE:\s*(\d+)', text, re.IGNORECASE)
                 dte_val = dte_m.group(1) if dte_m else pdf_file.name
 
-                text_squished = squish_text(text)
-                m_id, m_name = None, "N/A"
-                
-                # Check against our aggressively squished master list
-                for alias, mun_id, official_name in search_list:
-                    alias_squished = squish_text(alias)
-                    if alias_squished in text_squished:
-                        m_id = mun_id
-                        m_name = official_name
-                        break
+                # Use the municipality selected by the user (not detected from receipt)
+                m_id = user_m_id
+                m_name = user_m_name
 
                 if m_id:
                     abar_sum, agri_sum = 0, 0
-                    cultivados = ['tomate', 'pina', 'piña', 'banano', 'zanahoria', 'guisquil', 'güisquil', 'cebolla', 'aguacate', 
-                                  'miltomate', 'brocoli', 'brócoli', 'melon', 'melón', 'ejote', 'maiz', 'maíz', 'jamaica', 
-                                  'cebada', 'papaya', 'manzana', 'chile', 'apio', 'ajo', 'cilantro', 'tusa', 'sandia', 'sandía',
-                                  'platano', 'plátano', 'naranja', 'limon', 'limón', 'lechuga', 'repollo', 'remolacha', 
-                                  'rabano', 'rábano', 'pimiento', 'berenjena', 'calabaza', 'pepino']
-                    abarrotes = ['pollo', 'tostada', 'huevo', 'pan', 'queso', 'carne', 'res', 'chowmein', 'chow mein', 
-                                 'chaomein', 'chaumein', 'cahomein', 'crema', 'leche', 'mantequilla', 'aceite', 'arroz',
-                                 'frijol', 'azucar', 'azúcar', 'sal', 'harina', 'pasta', 'fideos', 'atol', 'incaparina']
+                    
+                    cultivados = [
+                        # frutas
+                        'banano', 'bananano',                         # triple-n typo
+                        'platano', 'pina', 'papaya', 'sandia', 'melon', 'mango',
+                        'naranja', 'limon', 'limom', 'limo',          # limon typos
+                        'manzana', 'aguacate', 'jamaica', 'tamarindo',
+                        'guayaba', 'fresa', 'mora', 'arandano', 'orandano',
+                        # verduras / hortalizas
+                        'tomate', 'miltomate', 'cebolla', 'zanahoria', 'ejote',
+                        'guisquil', 'gusiquil', 'guisqul',            # guisquil typos
+                        'guicoy', 'ayote', 'calabaza', 'remolacha', 'repollo',
+                        'brocoli', 'brocoly',                          # brocoli typo
+                        'coliflor', 'papa', 'camote', 'yuca', 'malanga',
+                        'espinaca', 'bledo', 'rabano', 'lechuga', 'pepino',
+                        'chipolin', 'chipilin',
+                        # hierbas / aromaticas
+                        'perejil', 'ajo', 'apio', 'cilantro', 'chipilin', 'oregano', 'romero',
+                        'hierba', 'hierba buena', 'hierbabuena', 'hirbabuena',
+                        'mashan', 'apazote', 'apasote',                # apazote misspelling
+                        'zacate', 'tusa', 'laurel', 'tomio', 'tomillo', 'albahaca',
+                        # granos frescos
+                        'maiz', 'cebada', 'cabada',                    # cebada typo
+                        'trigo', 'arveja', 'haba', 'azote',
+                        # chiles cultivados (qualified only — bare "chile" stays unmatched)
+                        'chile pimiento', 'chile pimento',             # pimento typo
+                        'chile pasa', 'chila pasa',                    # chila typo
+                        'chile guaque', 'chile guaca',                 # guaca typo (very common)
+                        'chile cobanero', 'chile verde', 'chile jalapeno', 'chile chiltepe',
+                        'chile dulce', 'chile morron', 'chile chocolate', 'chile negro', 'achiote', 'chile',
+                        # frijol cultivado
+                        'frijol ejotero', 'frijol tierno', 'frijol negro', 'frijol vaina real',
+                        
+                    ]
+                    
+                    abarrotes = [
+                        # semillas secas / procesadas
+                        'ajonjoli', 'ajonjolin',                       # ajonjoli variant spelling
+                        'pepita', 'pepitoria', 'pepitorio', 'frijol sellado',
+                        'mani', 'mania',                              # mani typo
+                        # proteina animal
+                        'huevo', 'pollo', 'pechuga', 'pierna', 'muslo', 'res', 'carne',
+                        'pescado', 'embutido', 'chorizo', 'salchicha', 'jamon',
+                        # lacteos
+                        'crema', 'leche', 'queso', 'yogur', 'mantequilla', 'margarina',
+                        # panaderia
+                        'pan', 'pirujo', 'cevada',                              # "pirujo" sometimes appears without "pan"
+                        'tostada', 'tortilla', 'galleta', 'chocolate',
+                        # pasta / cereales procesados
+                        'pasta', 'espagueti', 'fideo', 'macarron',
+                        'codito',                                      # catches "pasta codito" / "pasto codito"
+                        'avena', 'abena',                              # avena typo
+                        'corazon de trigo',
+                        'chaomein', 'chow mein', 'chao mein', 'chaumein', 'cahomein',
+                        'mosh',                                        # Guatemalan oatmeal (mosh quaker)
+                        # harinas / mezclas
+                        'maseca', 'incaparina', 'protemas', 'atol', 'harina', 'pinol',
+                        # aceites / condimentos
+                        'aceite', 'sal', 'azucar', 'vinagre',
+                        'achiote', 'achote',                           # achiote typo
+                        'canela',
+                        'laurel', 'laure',                             # laurel typo
+                        'tomillo', 'clavo', 'pimienta', 'comino',
+                        'pimiento en polvo',                           # paprika-like: processed, not fresh pimiento
+                        # otros
+                        'arroz', 'consome', 'concentrado', 'levadura', 'agua pura', 'bebida',
+                        # chiles procesados / secos
+                        'chile seco', 'chile rojo', 'chile en polvo', 'chile molido',
+                        # frijol procesado / seco
+                        'frijol negro', 'frijol rojo', 'frijol colorado',  # colorado = rojo variant
+                        'frijol blanco', 'frijol en grano', 'frijol seco',
+                        #etc.
+                        'crayones', 'crayones de madera', 'sacapuntas', 'borradores',
+                        'frascos de goma', 'lapiz', 'lapicero', 'lapiceros', 'lapices',
+                        'cuadernos', 'espaqueti'
+                    ]
                     
                     # Find the Total column and Description column indices
+                    # ONLY search in the first table's header rows (first 5 rows max)
                     total_col_idx = -1
                     desc_col_idx = -1
                     
-                    for row_tbl in tables:
-                        if not row_tbl: continue
-                        for idx, cell in enumerate(row_tbl):
-                            if not cell: continue
-                            cell_norm = normalize_text(str(cell))
+                    if tables:
+                        header_rows = tables[:min(5, len(tables))]
+                        for row_tbl in header_rows:
+                            if not row_tbl: continue
+                            for idx, cell in enumerate(row_tbl):
+                                if not cell: continue
+                                cell_norm = normalize_text(str(cell))
+                                
+                                # Find Total column (has "Total" and "(Q)")
+                                if 'total' in cell_norm and 'descuento' not in cell_norm and '(q)' in cell_norm:
+                                    total_col_idx = idx
+                                
+                                # Find Description column
+                                if 'descripcion' in cell_norm:
+                                    desc_col_idx = idx
                             
-                            # Find Total column (has "Total" and "(Q)")
-                            if 'total' in cell_norm and 'descuento' not in cell_norm and '(q)' in cell_norm:
-                                total_col_idx = idx
-                            
-                            # Find Description column
-                            if 'descripcion' in cell_norm:
-                                desc_col_idx = idx
-                        
-                        if total_col_idx != -1 and desc_col_idx != -1:
-                            break
+                            if total_col_idx != -1 and desc_col_idx != -1:
+                                break
                     
                     # If we didn't find the description column, assume it's index 3
                     if desc_col_idx == -1:
@@ -326,13 +544,23 @@ if st.button("INICIAR PROCESO") and uploaded_pdfs and uploaded_xlsx:
                         if any(keyword in row_text_normalized for keyword in skip_keywords):
                             continue
                         
-                        # FILTER 2: First cell should be a number (item number like 1, 2, 3...)
-                        if row_tbl and row_tbl[0]:
-                            first_cell = str(row_tbl[0]).strip()
-                            # Check if first cell is a number (item rows start with 1, 2, 3, etc.)
-                            if not first_cell.isdigit():
-                                continue
-                        else:
+                        # FILTER 2: Check if this looks like a data row
+                        # Look for a digit in the first few cells (item numbers like 1, 2, 3...)
+                        is_data_row = False
+                        for cell in row_tbl[:5]:  # Check first 5 cells (more lenient)
+                            if cell:
+                                cell_str = str(cell).strip()
+                                if cell_str.isdigit():
+                                    is_data_row = True
+                                    break
+                        
+                        if not is_data_row:
+                            continue
+                        
+                        # FILTER 3: Skip "artifact rows" caused by white lines splitting a row
+                        # These rows have very few non-empty cells (usually just the item number)
+                        non_empty_cells = sum(1 for c in row_tbl if c and str(c).strip())
+                        if non_empty_cells < 3:
                             continue
                         
                         # Extract the value
@@ -342,16 +570,49 @@ if st.button("INICIAR PROCESO") and uploaded_pdfs and uploaded_xlsx:
                         if val <= 0:
                             continue
                         
-                        # Extract ONLY the description from the correct column
-                        description = ""
-                        if desc_col_idx < len(row_tbl) and row_tbl[desc_col_idx]:
-                            description = str(row_tbl[desc_col_idx]).strip()
-                        else:
-                            # Fallback: try index 3
+                        # Use intelligent description finder
+                        description = find_description_in_row(row_tbl)
+                        
+                        # Fallback chain: try progressively more aggressive methods
+                        if not description:
+                            # Method 1: Try the detected description column
+                            if desc_col_idx != -1 and desc_col_idx < len(row_tbl):
+                                cell = row_tbl[desc_col_idx]
+                                if cell:
+                                    description = str(cell).strip()
+                        
+                        if not description:
+                            # Method 2: Try index 3 (standard description column)
                             if len(row_tbl) > 3 and row_tbl[3]:
                                 description = str(row_tbl[3]).strip()
-                            else:
-                                description = row_text
+                        
+                        if not description:
+                            # Method 3: Find the longest non-numeric cell
+                            longest = ""
+                            for cell in row_tbl:
+                                if not cell:
+                                    continue
+                                cell_str = str(cell).strip()
+                                # Skip pure numbers
+                                try:
+                                    float(cell_str.replace(',', '.'))
+                                    continue
+                                except ValueError:
+                                    # Skip very short cells and keywords
+                                    if len(cell_str) > len(longest) and cell_str.upper() not in ['BIEN', 'SERVICIO']:
+                                        longest = cell_str
+                            if longest:
+                                description = longest
+                        
+                        if not description:
+                            # Method 4: Just use the longest cell period (even if it's a number)
+                            longest = max((str(c).strip() for c in row_tbl if c), key=len, default="")
+                            if longest:
+                                description = longest
+                        
+                        if not description:
+                            # Method 5: Last resort - use row text
+                            description = "REVISAR: " + row_text[:50]
                         
                         # Use fuzzy matching to categorize (using full row text for matching)
                         category, matched_word = fuzzy_match_category(row_text, cultivados, abarrotes, threshold=80)
@@ -383,10 +644,8 @@ if st.button("INICIAR PROCESO") and uploaded_pdfs and uploaded_xlsx:
                     perc_abar = (abar_sum / total_rec) if total_rec > 0 else 0
                     alert_status = "⚠️ ALERTA: >30%" if perc_abar > 0.30 else "OK"
 
-                    ws_det.append([name_e, nit_e, nit_r, dte_val, m_name, alert_status])
+                    ws_det.append([pdf_file.name, name_e, nit_e, nit_r, dte_val, m_name, alert_status])
                     new_count += 1
-                else:
-                    st.warning(f"No se pudo identificar el municipio en la factura: {pdf_file.name}")
 
             progress_bar.progress((i + 1) / len(uploaded_pdfs))
 
@@ -447,6 +706,14 @@ if st.button("INICIAR PROCESO") and uploaded_pdfs and uploaded_xlsx:
                             Los totales de esos productos no fueron agregados a la cantidad de la primera hoja"""
         
         st.success(success_msg)
+        
+        # Show warning for non-standard receipts that were skipped
+        if skipped_non_standard:
+            warning_msg = f"⚠️ **{len(skipped_non_standard)} factura(s) no estándar fueron ignoradas** (proformas, cotizaciones, u otros formatos no oficiales). Estas deben procesarse manualmente:\n\n"
+            for pdf_name in skipped_non_standard:
+                warning_msg += f"- {pdf_name}\n"
+            st.warning(warning_msg)
+        
         output.seek(0)
         st.download_button("Descargar Reporte Final", data=output.getvalue(), 
                            file_name="Reporte_MAGA_Actualizado.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
