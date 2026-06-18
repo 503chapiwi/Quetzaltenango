@@ -444,7 +444,7 @@ if st.button("INICIAR PROCESO") and uploaded_pdfs and uploaded_xlsx and municipi
                         'banano', 'bananano',                          # triple-n typo
                         'platano', 'pina', 'papaya', 'sandia', 'melon', 'mango',
                         'naranja', 'limon', 'limom', 'limo',           # limon typos
-                        'manzana', 'aguacate', 'jamaica', 'tamarindo',
+                        'manzana', 'aguacate', 'tamarindo',
                         'guayaba', 'fresa', 'mora', 'arandano', 'orandano',
                         # verduras / hortalizas
                         'tomate', 'miltomate', 'cebolla', 'zanahoria', 'ejote',
@@ -455,34 +455,31 @@ if st.button("INICIAR PROCESO") and uploaded_pdfs and uploaded_xlsx and municipi
                         'espinaca', 'bledo', 'rabano', 'lechuga', 'pepino',
                         'chipolin', 'chipilin',
                         # hierbas / aromaticas
-                        'perejil', 'ajo', 'apio', 'cilantro', 'cilandro', 'oregano', 'romero',   # removed duplicate 'chipilin'
+                        'perejil', 'ajo', 'apio', 'cilantro', 'cilandro',   # removed duplicate 'chipilin'
                         'hierba', 'hierba buena', 'hierbabuena', 'hirbabuena',
                         'mashan', 'apazote', 'apasote',                # apazote misspelling
-                        'zacate', 'tusa', 'laurel', 'tomio', 'tomillo', 'albahaca',
                         # granos frescos
                         'maiz', 'cebada', 'cabada',                   # cebada typo
                         'trigo', 'arveja', 'haba', 'azote',
-                        'ajonjoli', 'ajonjolin',                       # ajonjoli variant spelling
                         # chiles cultivados (qualified only -- bare "chile" stays unmatched)
                         'chile pimiento', 'chile pimento', 'chile pimienta',            # pimento typo
-                        'chile cobanero', 'chile verde', 'chile jalapeno', 'chile chiltepe',
+                        'chile verde', 'chile jalapeno', 'chile chiltepe',
                         'chile dulce', 'chile morron',
                         # frijol cultivado
-                        'frijol ejotero', 'frijol tierno', 'frijol negro', 'frijol vaina real',  'frijol seco',
+                        'frijol ejotero', 'frijol tierno', 'frijol negro', 'frijol seco',
                         'frijol rojo', 'frijol colorado', 'frijol blanco', 'frijol en grano',
                         #más
-                        'carne de res', 'res', 'pescado', 'huevo', 'pollo', 'pechuga', 'pierna', 'muslo',
-                        'tomillo', 'clavo', 'pimienta', 'comino', 'achiote', 'achote',          # achiote typo
-                        'canela', 'laurel', 'laure', 'pepitoria', 'pepitorio', 'mani', 'mania', 'manilla'
+                        'res', 'pescado', 'huevo', 'pollo', 'pechuga', 'pierna', 'muslo',
+                        'pimienta', 'carne', 'leche', 'queso', 'arroz pesado'
                     ]
 
                     abarrotes = [
                         # semillas secas / procesadas
                         'pepita', 'frijol sellado',
                         # proteina animal
-                        'carne', 'embutido', 'chorizo', 'salchicha', 'jamon',
+                        'embutido', 'chorizo', 'salchicha', 'jamon', 'carne molida', 'carne de res molida',
                         # lacteos
-                        'crema', 'leche', 'queso', 'yogur', 'mantequilla', 'margarina',
+                        'crema', 'yogur', 'mantequilla', 'margarina',
                         # panaderia
                         'pan', 'pirujo',                      # "pirujo" sometimes appears without "pan"; cevada = cebada typo
                         'tostada', 'tortilla', 'galleta', 'chocolate',
@@ -499,14 +496,20 @@ if st.button("INICIAR PROCESO") and uploaded_pdfs and uploaded_xlsx and municipi
                         'aceite', 'sal', 'azucar', 'vinagre',
                         'pimiento en polvo',
                         # otros
-                        'arroz', 'consome', 'concentrado', 'levadura', 'agua pura', 'bebida',
+                        'arroz blanco', 'consome', 'concentrado', 'levadura', 'agua pura', 'bebida',
+                        'arroz amarillo', 'arroz molido',
                         # chiles procesados / secos
                         'chile seco', 'chile rojo', 'chile en polvo', 'chile molido',
                         # frijol procesado / seco
                         'chile pasa', 'chila pasa',                    # chila typo
                         'chile guaque', 'chile guaca',                 # guaca typo (muy comun)
-                        'chile chocolate', 'chile negro'
-
+                        'chile chocolate', 'chile negro',
+                        #etc
+                        'jamaica', 'romero', 'zacate', 'tusa', 'laurel', 'tomillo', 'tomio',
+                        'albahaca', 'ajonjoli', 'ajonjolin', 'chile cobanero', 'chile coban', 
+                        'frijol vaina real', 'clavo', 'comino', 'achiote', 'canela', 
+                        'pepitoria', 'mani', 'manilla', 'achote', 'laure', 'mania', 'pepitorio',
+                        'oregano'
                     ]
 
                     # Find the Total column and Description column indices
