@@ -184,13 +184,15 @@ def merge_split_rows(tables):
                 cell_str = str(cell).strip()
                 if not cell_str:
                     continue
-                # Check if it's a number
-                try:
-                    val = float(cell_str.replace(',', '.').replace(' ', ''))
-                    if val > 0:
+                # Check if it's a number (comma-aware: '1,980.00' is a number, not text).
+                # Without this, a TOTALES summary row like ['TOTALES:', ..., '1,980.00', '']
+                # parses as text and gets mis-merged into the previous item, which is then
+                # dropped by the 'totales' skip-keyword filter (losing the last line item).
+                if re.fullmatch(r'[\d.,]+', cell_str):
+                    if clean_currency(cell_str) > 0:
                         has_numeric_value = True
                         break
-                except ValueError:
+                else:
                     # Not a number - could be description text
                     cell_upper = cell_str.upper()
                     if len(cell_str) >= 3 and cell_upper not in ['BIEN', 'SERVICIO', 'B/S']:
@@ -251,12 +253,14 @@ def fuzzy_match_category(description, cultivados, abarrotes, threshold=80):
     desc_norm = re.sub(r'(\d)([a-z])', r'\1 \2', desc_norm)
 
     # (e?s)? tolerates Spanish plurals: banano/bananos, limon/limones, etc.
-    for kw in cultivados:
-        if re.search(r'\b' + re.escape(kw) + r'(e?s)?\b', desc_norm):
-            return ('agricultura', kw)
+    # Check abarrotes FIRST so specific processed items (e.g. 'carne molida',
+    # 'carne de res molida') win over the generic 'carne'/'res' in cultivados.
     for kw in abarrotes:
         if re.search(r'\b' + re.escape(kw) + r'(e?s)?\b', desc_norm):
             return ('abarrotes', kw)
+    for kw in cultivados:
+        if re.search(r'\b' + re.escape(kw) + r'(e?s)?\b', desc_norm):
+            return ('agricultura', kw)
 
     return ('unmatched', None)
 
