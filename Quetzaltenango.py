@@ -304,6 +304,184 @@ MUNICIPIOS_OPCIONES = {
     "Zunil": 24,
 }
 
+# =========================================================================
+# GRUPOS DE MUNICIPIOS  --  cada grupo usa su propio "menú" de productos
+# (listas de cultivados / abarrotes), porque la mezcla de productos cambia
+# según el municipio. El grupo se determina AUTOMÁTICAMENTE a partir del
+# municipio seleccionado; el usuario no elige el grupo manualmente.
+#
+#   GRUPO 1: Coatepeque, Colomba, El Palmar, Flores Costa Cuca, Génova Costa Cuca
+#   GRUPO 2: todos los demás municipios de Quetzaltenango
+# =========================================================================
+GRUPO_1_IDS = {5, 6, 8, 9, 10}   # Coatepeque, Colomba, El Palmar, Flores Costa Cuca, Génova Costa Cuca
+
+def get_grupo(m_id):
+    """Devuelve 1 (Costa Cuca/costa) o 2 (resto de municipios) según el municipio."""
+    return 1 if m_id in GRUPO_1_IDS else 2
+
+# -------------------------------------------------------------------------
+# MENÚ DEL GRUPO 1  (Coatepeque, Colomba, El Palmar, Flores Costa Cuca, Génova Costa Cuca)
+# NOTA: por ahora es una COPIA EXACTA del menú original. Edite ESTAS listas
+#       con los productos propios del Grupo 1.
+# -------------------------------------------------------------------------
+CULTIVADOS_GRUPO_1 = [
+    # frutas
+    'banano', 'bananano',                          # triple-n typo
+    'platano', 'pina', 'papaya', 'sandia', 'melon', 'mango',
+    'naranja', 'limon', 'limom', 'limo',           # limon typos
+    'manzana', 'aguacate', 'tamarindo',
+    'guayaba', 'fresa', 'mora', 'arandano', 'orandano',
+    # verduras / hortalizas
+    'tomate', 'miltomate', 'cebolla', 'zanahoria', 'ejote',
+    'guisquil', 'gusiquil', 'guisqul',             # guisquil typos
+    'guicoy', 'ayote', 'calabaza', 'remolacha', 'repollo',
+    'brocoli', 'brocoly',                          # brocoli typo
+    'coliflor', 'papa', 'camote', 'yuca', 'malanga',
+    'espinaca', 'bledo', 'rabano', 'lechuga', 'pepino',
+    'chipolin', 'chipilin',
+    # hierbas / aromaticas
+    'perejil', 'ajo', 'apio', 'cilantro', 'cilandro',   # removed duplicate 'chipilin'
+    'hierba', 'hierba buena', 'hierbabuena', 'hirbabuena',
+    'mashan', 'apazote', 'apasote',                # apazote misspelling
+    # granos frescos
+    'maiz', 'cebada', 'cabada',                   # cebada typo
+    'trigo', 'arveja', 'haba', 'azote',
+    # chiles cultivados (qualified only -- bare "chile" stays unmatched)
+    'chile pimiento', 'chile pimento', 'chile pimienta',            # pimento typo
+    'chile verde', 'chile jalapeno', 'chile chiltepe',
+    'chile dulce', 'chile morron',
+    # frijol cultivado
+    'frijol ejotero', 'frijol tierno', 'frijol negro', 'frijol seco',
+    'frijol rojo', 'frijol colorado', 'frijol blanco', 'frijol en grano',
+    #más
+    'res', 'pescado', 'huevo', 'pollo', 'pechuga', 'pierna', 'muslo',
+    'pimienta', 'carne', 'leche', 'queso', 'arroz pesado'
+]
+
+ABARROTES_GRUPO_1 = [
+    # semillas secas / procesadas
+    'pepita', 'frijol sellado',
+    # proteina animal
+    'embutido', 'chorizo', 'salchicha', 'jamon', 'carne molida', 'carne de res molida',
+    # lacteos
+    'crema', 'yogur', 'mantequilla', 'margarina',
+    # panaderia
+    'pan', 'pirujo',                      # "pirujo" sometimes appears without "pan"; cevada = cebada typo
+    'tostada', 'tortilla', 'galleta', 'chocolate',
+    # pasta / cereales procesados
+    'pasta', 'espagueti', 'fideo', 'macarron', 'espaqueti',
+    'codito',                                       # catches "pasta codito" / "pasto codito"
+    'avena', 'abena',                               # avena typo
+    'corazon de trigo',
+    'chaomein', 'chow mein', 'chao mein', 'chaumein', 'cahomein',
+    'mosh',
+    # harinas / mezclas
+    'maseca', 'incaparina', 'protemas', 'atol', 'harina', 'pinol',
+    # aceites / condimentos
+    'aceite', 'sal', 'azucar', 'vinagre',
+    'pimiento en polvo',
+    # otros
+    'arroz blanco', 'consome', 'concentrado', 'levadura', 'agua pura', 'bebida',
+    'arroz amarillo', 'arroz molido',
+    # chiles procesados / secos
+    'chile seco', 'chile rojo', 'chile en polvo', 'chile molido',
+    # frijol procesado / seco
+    'chile pasa', 'chila pasa',                    # chila typo
+    'chile guaque', 'chile guaca',                 # guaca typo (muy comun)
+    'chile chocolate', 'chile negro',
+    #etc
+    'jamaica', 'romero', 'zacate', 'tusa', 'laurel', 'tomillo', 'tomio',
+    'albahaca', 'ajonjoli', 'ajonjolin', 'chile cobanero', 'chile coban', 
+    'frijol vaina real', 'clavo', 'comino', 'achiote', 'canela', 
+    'pepitoria', 'mani', 'manilla', 'achote', 'laure', 'mania', 'pepitorio',
+    'oregano'
+]
+
+# -------------------------------------------------------------------------
+# MENÚ DEL GRUPO 2  (todos los demás municipios de Quetzaltenango)
+# NOTA: por ahora es una COPIA EXACTA del menú original. Edite ESTAS listas
+#       con los productos propios del Grupo 2.
+# -------------------------------------------------------------------------
+CULTIVADOS_GRUPO_2 = [
+    # frutas
+    'banano', 'bananano',                          # triple-n typo
+    'platano', 'pina', 'papaya', 'sandia', 'melon', 'mango',
+    'naranja', 'limon', 'limom', 'limo',           # limon typos
+    'manzana', 'aguacate', 'tamarindo',
+    'guayaba', 'fresa', 'mora', 'arandano', 'orandano',
+    # verduras / hortalizas
+    'tomate', 'miltomate', 'cebolla', 'zanahoria', 'ejote',
+    'guisquil', 'gusiquil', 'guisqul',             # guisquil typos
+    'guicoy', 'ayote', 'calabaza', 'remolacha', 'repollo',
+    'brocoli', 'brocoly',                          # brocoli typo
+    'coliflor', 'papa', 'camote', 'yuca', 'malanga',
+    'espinaca', 'bledo', 'rabano', 'lechuga', 'pepino',
+    'chipolin', 'chipilin',
+    # hierbas / aromaticas
+    'perejil', 'ajo', 'apio', 'cilantro', 'cilandro',   # removed duplicate 'chipilin'
+    'hierba', 'hierba buena', 'hierbabuena', 'hirbabuena',
+    'mashan', 'apazote', 'apasote',                # apazote misspelling
+    # granos frescos
+    'maiz', 'cebada', 'cabada',                   # cebada typo
+    'trigo', 'arveja', 'haba', 'azote',
+    # chiles cultivados (qualified only -- bare "chile" stays unmatched)
+    'chile pimiento', 'chile pimento', 'chile pimienta',            # pimento typo
+    'chile verde', 'chile jalapeno', 'chile chiltepe',
+    'chile dulce', 'chile morron',
+    # frijol cultivado
+    'frijol ejotero', 'frijol tierno', 'frijol negro', 'frijol seco',
+    'frijol rojo', 'frijol colorado', 'frijol blanco', 'frijol en grano',
+    #más
+    'res', 'pescado', 'huevo', 'pollo', 'pechuga', 'pierna', 'muslo',
+    'pimienta', 'carne', 'leche', 'queso', 'arroz pesado'
+]
+
+ABARROTES_GRUPO_2 = [
+    # semillas secas / procesadas
+    'pepita', 'frijol sellado',
+    # proteina animal
+    'embutido', 'chorizo', 'salchicha', 'jamon', 'carne molida', 'carne de res molida',
+    # lacteos
+    'crema', 'yogur', 'mantequilla', 'margarina',
+    # panaderia
+    'pan', 'pirujo',                      # "pirujo" sometimes appears without "pan"; cevada = cebada typo
+    'tostada', 'tortilla', 'galleta', 'chocolate',
+    # pasta / cereales procesados
+    'pasta', 'espagueti', 'fideo', 'macarron', 'espaqueti',
+    'codito',                                       # catches "pasta codito" / "pasto codito"
+    'avena', 'abena',                               # avena typo
+    'corazon de trigo',
+    'chaomein', 'chow mein', 'chao mein', 'chaumein', 'cahomein',
+    'mosh',
+    # harinas / mezclas
+    'maseca', 'incaparina', 'protemas', 'atol', 'harina', 'pinol',
+    # aceites / condimentos
+    'aceite', 'sal', 'azucar', 'vinagre',
+    'pimiento en polvo',
+    # otros
+    'arroz blanco', 'consome', 'concentrado', 'levadura', 'agua pura', 'bebida',
+    'arroz amarillo', 'arroz molido',
+    # chiles procesados / secos
+    'chile seco', 'chile rojo', 'chile en polvo', 'chile molido',
+    # frijol procesado / seco
+    'chile pasa', 'chila pasa',                    # chila typo
+    'chile guaque', 'chile guaca',                 # guaca typo (muy comun)
+    'chile chocolate', 'chile negro',
+    #etc
+    'jamaica', 'romero', 'zacate', 'tusa', 'laurel', 'tomillo', 'tomio',
+    'albahaca', 'ajonjoli', 'ajonjolin', 'chile cobanero', 'chile coban', 
+    'frijol vaina real', 'clavo', 'comino', 'achiote', 'canela', 
+    'pepitoria', 'mani', 'manilla', 'achote', 'laure', 'mania', 'pepitorio',
+    'oregano'
+]
+
+# Mapa: número de grupo -> (lista cultivados, lista abarrotes)
+MENUS_POR_GRUPO = {
+    1: (CULTIVADOS_GRUPO_1, ABARROTES_GRUPO_1),
+    2: (CULTIVADOS_GRUPO_2, ABARROTES_GRUPO_2),
+}
+
+
 selected_municipio = st.selectbox(
     label='1. Seleccione el Municipio de las facturas',
     options=["-- Seleccionar municipio --"] + list(MUNICIPIOS_OPCIONES.keys()),
@@ -443,78 +621,10 @@ if st.button("INICIAR PROCESO") and uploaded_pdfs and uploaded_xlsx and municipi
                 if m_id:
                     abar_sum, agri_sum = 0, 0
 
-                    cultivados = [
-                        # frutas
-                        'banano', 'bananano',                          # triple-n typo
-                        'platano', 'pina', 'papaya', 'sandia', 'melon', 'mango',
-                        'naranja', 'limon', 'limom', 'limo',           # limon typos
-                        'manzana', 'aguacate', 'tamarindo',
-                        'guayaba', 'fresa', 'mora', 'arandano', 'orandano',
-                        # verduras / hortalizas
-                        'tomate', 'miltomate', 'cebolla', 'zanahoria', 'ejote',
-                        'guisquil', 'gusiquil', 'guisqul',             # guisquil typos
-                        'guicoy', 'ayote', 'calabaza', 'remolacha', 'repollo',
-                        'brocoli', 'brocoly',                          # brocoli typo
-                        'coliflor', 'papa', 'camote', 'yuca', 'malanga',
-                        'espinaca', 'bledo', 'rabano', 'lechuga', 'pepino',
-                        'chipolin', 'chipilin',
-                        # hierbas / aromaticas
-                        'perejil', 'ajo', 'apio', 'cilantro', 'cilandro',   # removed duplicate 'chipilin'
-                        'hierba', 'hierba buena', 'hierbabuena', 'hirbabuena',
-                        'mashan', 'apazote', 'apasote',                # apazote misspelling
-                        # granos frescos
-                        'maiz', 'cebada', 'cabada',                   # cebada typo
-                        'trigo', 'arveja', 'haba', 'azote',
-                        # chiles cultivados (qualified only -- bare "chile" stays unmatched)
-                        'chile pimiento', 'chile pimento', 'chile pimienta',            # pimento typo
-                        'chile verde', 'chile jalapeno', 'chile chiltepe',
-                        'chile dulce', 'chile morron',
-                        # frijol cultivado
-                        'frijol ejotero', 'frijol tierno', 'frijol negro', 'frijol seco',
-                        'frijol rojo', 'frijol colorado', 'frijol blanco', 'frijol en grano',
-                        #más
-                        'res', 'pescado', 'huevo', 'pollo', 'pechuga', 'pierna', 'muslo',
-                        'pimienta', 'carne', 'leche', 'queso', 'arroz pesado'
-                    ]
-
-                    abarrotes = [
-                        # semillas secas / procesadas
-                        'pepita', 'frijol sellado',
-                        # proteina animal
-                        'embutido', 'chorizo', 'salchicha', 'jamon', 'carne molida', 'carne de res molida',
-                        # lacteos
-                        'crema', 'yogur', 'mantequilla', 'margarina',
-                        # panaderia
-                        'pan', 'pirujo',                      # "pirujo" sometimes appears without "pan"; cevada = cebada typo
-                        'tostada', 'tortilla', 'galleta', 'chocolate',
-                        # pasta / cereales procesados
-                        'pasta', 'espagueti', 'fideo', 'macarron', 'espaqueti',
-                        'codito',                                       # catches "pasta codito" / "pasto codito"
-                        'avena', 'abena',                               # avena typo
-                        'corazon de trigo',
-                        'chaomein', 'chow mein', 'chao mein', 'chaumein', 'cahomein',
-                        'mosh',
-                        # harinas / mezclas
-                        'maseca', 'incaparina', 'protemas', 'atol', 'harina', 'pinol',
-                        # aceites / condimentos
-                        'aceite', 'sal', 'azucar', 'vinagre',
-                        'pimiento en polvo',
-                        # otros
-                        'arroz blanco', 'consome', 'concentrado', 'levadura', 'agua pura', 'bebida',
-                        'arroz amarillo', 'arroz molido',
-                        # chiles procesados / secos
-                        'chile seco', 'chile rojo', 'chile en polvo', 'chile molido',
-                        # frijol procesado / seco
-                        'chile pasa', 'chila pasa',                    # chila typo
-                        'chile guaque', 'chile guaca',                 # guaca typo (muy comun)
-                        'chile chocolate', 'chile negro',
-                        #etc
-                        'jamaica', 'romero', 'zacate', 'tusa', 'laurel', 'tomillo', 'tomio',
-                        'albahaca', 'ajonjoli', 'ajonjolin', 'chile cobanero', 'chile coban', 
-                        'frijol vaina real', 'clavo', 'comino', 'achiote', 'canela', 
-                        'pepitoria', 'mani', 'manilla', 'achote', 'laure', 'mania', 'pepitorio',
-                        'oregano'
-                    ]
+                    # Seleccionar el menú de productos según el grupo del municipio
+                    # (Grupo 1 = Costa Cuca/costa; Grupo 2 = el resto).
+                    grupo = get_grupo(m_id)
+                    cultivados, abarrotes = MENUS_POR_GRUPO[grupo]
 
                     # Find the Total column and Description column indices
                     # ONLY search in the first table's header rows (first 5 rows max)
