@@ -77,6 +77,51 @@ def extract_value_from_row(row_list, total_idx):
         if val > 0: return val
     return 0.0
 
+def extract_school_name(text):
+    """
+    Extracts the school name from the 'Nombre Receptor:' field of a SAT FEL factura.
+
+    In the extracted PDF text the left column (receptor data) and the right column
+    (fechas / moneda) share the same lines, e.g.:
+
+        Nombre Receptor: CONSEJO EDUCATIVO, EORM J.M. CANTON Fecha y hora de certificación: ...
+        CHUIXCHIMAL
+        Moneda: GTQ
+
+    So the name starts after 'Nombre Receptor:' and may continue on following lines
+    until a new labeled field appears. Right-column text ('Fecha y hora', 'Moneda:')
+    and the alternate-layout 'Dirección comprador:' field are stripped from each line.
+    """
+    lines = text.split('\n')
+    name_parts = []
+    started = False
+    for line in lines:
+        if not started:
+            m = re.match(r'\s*Nombre\s*Receptor:\s*(.*)', line, re.IGNORECASE)
+            if not m:
+                continue
+            started = True
+            part = m.group(1)
+        else:
+            # A continuation line; stop at the next labeled field or the items table.
+            if line.strip() == '.' or re.match(
+                r'(Moneda|#No|NIT|Nit|N[úu]mero|Serie|Fecha|Direcci[óo]n)\b',
+                line.strip(), re.IGNORECASE
+            ):
+                break
+            part = line
+        part = re.split(r'(?i)Fecha\s*y\s*hora', part)[0]
+        part = re.split(r'(?i)Moneda\s*:', part)[0]
+        part = re.split(r'(?i)Direcci[óo]n\s*comprador', part)[0]
+        part = part.strip()
+        if part:
+            name_parts.append(part)
+        else:
+            break
+    name = re.sub(r'\s+', ' ', ' '.join(name_parts)).strip()
+    name = name.strip('"').strip()  # some names come fully quoted: "ORGANIZACION..."
+    return name or "N/A"
+
 def get_master_cell(ws, r_idx, c_idx):
     cell = ws.cell(row=r_idx, column=c_idx)
     if type(cell).__name__ == 'MergedCell':
@@ -512,9 +557,14 @@ if st.button("INICIAR PROCESO") and uploaded_pdfs and uploaded_xlsx and municipi
 
         if "Extra Detalles" not in wb.sheetnames:
             ws_det = wb.create_sheet("Extra Detalles")
-            ws_det.append(['Archivo PDF', 'Nombre Emisor', 'NIT Emisor', 'NIT Receptor', 'Num. DTE', 'Municipio', 'Alerta % Abarrotes'])
+            ws_det.append(['Archivo PDF', 'Nombre Emisor', 'NIT Emisor', 'NIT Receptor', 'Nombre Escuela', 'Num. DTE', 'Municipio', 'Alerta % Abarrotes'])
         else:
             ws_det = wb["Extra Detalles"]
+            # Excel files from older runs lack the 'Nombre Escuela' column:
+            # insert it after 'NIT Receptor' so old and new rows stay aligned.
+            if normalize_text(str(ws_det.cell(row=1, column=5).value or "")) != normalize_text("Nombre Escuela"):
+                ws_det.insert_cols(5)
+                ws_det.cell(row=1, column=5).value = "Nombre Escuela"
 
         # Create sheet for unmatched items
         if "Items Sin Clasificar" not in wb.sheetnames:
@@ -756,6 +806,7 @@ if st.button("INICIAR PROCESO") and uploaded_pdfs and uploaded_xlsx and municipi
 
                     nit_e = nit_e_match.group(1).strip() if nit_e_match else "N/A"
                     nit_r = nit_r_match.group(1).strip() if nit_r_match else "N/A"
+                    school_name = extract_school_name(text)
                     raw_name = re.sub(r'\s+', ' ', name_e_match.group(1).strip() if name_e_match else "N/A")
                     name_e = re.split(r'(?i)n[úu]mero\s*de\s*autorizaci[óo]n', raw_name)[0]
                     name_e = re.split(r'(?i)\bserie\b', name_e)[0].strip()
@@ -769,7 +820,7 @@ if st.button("INICIAR PROCESO") and uploaded_pdfs and uploaded_xlsx and municipi
                     perc_abar = (abar_sum / total_rec) if total_rec > 0 else 0
                     alert_status = "⚠️ ALERTA: >30%" if perc_abar > 0.30 else "OK"
 
-                    ws_det.append([pdf_file.name, name_e, nit_e, nit_r, dte_val, m_name, alert_status])
+                    ws_det.append([pdf_file.name, name_e, nit_e, nit_r, school_name, dte_val, m_name, alert_status])
                     new_count += 1
 
             progress_bar.progress((i + 1) / len(uploaded_pdfs))
