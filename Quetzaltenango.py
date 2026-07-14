@@ -374,7 +374,7 @@ CULTIVADOS_GRUPO_1 = [
     'banano', 'bananano',                          # triple-n typo
     'platano', 'pina', 'papaya', 'sandia', 'melon', 'mango',
     'naranja', 'limon', 'limom', 'limo',           # limon typos
-    'manzana', 'aguacate', 'tamarindo',
+    'manzana', 'aguacate', 'tamarindo', 'membrillo',
     'guayaba', 'fresa', 'mora', 'arandano', 'orandano',
     # verduras / hortalizas
     'tomate', 'miltomate', 'cebolla', 'zanahoria', 'ejote',
@@ -400,12 +400,12 @@ CULTIVADOS_GRUPO_1 = [
     'frijol rojo', 'frijol colorado', 'frijol blanco', 'frijol en grano',
     #más
     'res', 'pescado', 'huevo', 'pollo', 'pechuga', 'pierna', 'muslo',
-    'pimienta', 'carne', 'leche', 'queso', 'arroz pesado'
+    'pimienta', 'carne', 'leche', 'queso', 'arroz pesado', 'jamaica'
 ]
 
 ABARROTES_GRUPO_1 = [
     # semillas secas / procesadas
-    'pepita', 'frijol sellado',
+    'pepita', 'frijol sellado', 'paq de', 'paquete de', 'chiper', 'australian', 'anchor', 
     # proteina animal
     'embutido', 'chorizo', 'salchicha', 'jamon', 'carne molida', 'carne de res molida',
     # lacteos
@@ -435,11 +435,11 @@ ABARROTES_GRUPO_1 = [
     'chile guaque', 'chile guaca',                 # guaca typo (muy comun)
     'chile chocolate', 'chile negro',
     #etc
-    'jamaica', 'romero', 'zacate', 'tusa', 'laurel', 'tomillo', 'tomio',
+    'romero', 'zacate', 'tusa', 'laurel', 'tomillo', 'tomio',
     'albahaca', 'ajonjoli', 'ajonjolin', 'chile cobanero', 'chile coban', 
     'frijol vaina real', 'clavo', 'comino', 'achiote', 'canela', 
     'pepitoria', 'mani', 'manilla', 'achote', 'laure', 'mania', 'pepitorio',
-    'oregano'
+    'oregano', 'suli'
 ]
 
 # -------------------------------------------------------------------------
@@ -483,7 +483,7 @@ CULTIVADOS_GRUPO_2 = [
 
 ABARROTES_GRUPO_2 = [
     # semillas secas / procesadas
-    'pepita', 'frijol sellado',
+    'pepita', 'frijol sellado','paq de', 'paquete de', 'chiper', 'australian', 'anchor', 'australia', 'suli',
     # proteina animal
     'embutido', 'chorizo', 'salchicha', 'jamon', 'carne molida', 'carne de res molida',
     # lacteos
