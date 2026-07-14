@@ -405,7 +405,7 @@ CULTIVADOS_GRUPO_1 = [
 
 ABARROTES_GRUPO_1 = [
     # semillas secas / procesadas
-    'pepita', 'frijol sellado', 'paq de', 'paquete de', 'chiper', 'australian', 'anchor', 
+    'pepita', 'frijol sellado', 'paq de', 'paquete de', 'chiper', 'australian', 'anchor', 'australia', 'suli',
     # proteina animal
     'embutido', 'chorizo', 'salchicha', 'jamon', 'carne molida', 'carne de res molida',
     # lacteos
@@ -483,7 +483,7 @@ CULTIVADOS_GRUPO_2 = [
 
 ABARROTES_GRUPO_2 = [
     # semillas secas / procesadas
-    'pepita', 'frijol sellado','paq de', 'paquete de', 'chiper', 'australian', 'anchor', 'australia', 'suli',
+    'pepita', 'frijol sellado', 'paq de', 'paquete de', 'chiper', 'australian', 'anchor', 'australia', 'suli',
     # proteina animal
     'embutido', 'chorizo', 'salchicha', 'jamon', 'carne molida', 'carne de res molida',
     # lacteos
